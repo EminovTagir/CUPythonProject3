@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Retrieval</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #000;
+            color: #0f0;
+            font-family: 'Press Start 2P', monospace;
+            margin: 0;
+            padding: 0;
+            position: relative;
+            overflow-x: hidden;
+        }
+        .matrix-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('https://imgur.com/lIwQLuT') repeat;
+            animation: flicker 10s linear infinite;
+            z-index: -1;
+        }
+        @keyframes flicker {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        nav.navbar {
+            background: rgba(0, 0, 0, 0.8);
+            border-bottom: 2px solid #0f0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+        .navbar-brand, .nav-link {
+            color: #0f0 !important;
+            text-shadow: 1px 1px 2px #000;
+            font-weight: bold;
+        }
+        .nav-link:hover {
+            color: #ff0 !important;
+        }
+        .container {
+            margin-top: 60px;
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid #0f0;
+            border-radius: 8px;
+            padding: 40px;
+            max-width: 800px;
+            animation: fadeIn 1.5s forwards;
+            opacity: 0;
+        }
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+        h2 {
+            font-weight: bold;
+            margin-bottom: 30px;
+            color: #0f0;
+            text-align: center;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+        }
+        .form-group label {
+            color: #0f0;
+            font-weight: bold;
+        }
+        .form-control {
+            background-color: #1a1a1a;
+            border: 2px solid #0f0;
+            color: #0f0;
+        }
+        .btn-secondary, .btn-primary {
+            background: #0f0;
+            border: none;
+            border-radius: 4px;
+            padding: 10px 24px;
+            font-weight: bold;
+            transition: background-color 0.3s, box-shadow 0.3s, transform 0.3s;
+        }
+        .btn-secondary:hover, .btn-primary:hover {
+            background: #0c0;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+        }
+        .point-entry {
+            background: #1a1a1a;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            border: 2px solid #0f0;
+        }
+        .form-check-label {
+            color: #0f0;
+            font-weight: bold;
+        }
+        #result {
+            margin-top: 30px;
+            padding: 20px;
+            background: #1a1a1a;
+            border: 1px solid #0f0;
+            border-radius: 8px;
+        }
+        .cool-text {
+            color: #0f0;
+            font-weight: bold;
+        }
+        .cursor {
+            border-left: 2px solid #0f0;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0%, 50% { border-color: #0f0; }
+            50.01%, 100% { border-color: transparent; }
+        }
+    </style>
+</head>
+<body>
+    <div class="matrix-background"></div>
+    <nav class="navbar navbar-expand-lg">
+        <a class="navbar-brand" href="#">Weather</a>
+    </nav>
+
+    <div class="container">
+        <h2>Enter Points <span class="cursor"></span></h2>
+        <form id="pointsForm">
+            <div id="pointsContainer">
+                <div class="form-group point-entry">
+                    <label>Select Point Type:</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="pointType0" value="city" checked onclick="toggleInputType(0)">
+                        <label class="form-check-label">City</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="pointType0" value="coordinates" onclick="toggleInputType(0)">
+                        <label class="form-check-label">Coordinates</label>
+                    </div>
+                    <input type="text" class="form-control city-input" name="city0" placeholder="Enter city name">
+                    <div class="coordinates-input" style="display: none;">
+                        <input type="text" class="form-control mb-2" name="latitude0" placeholder="Latitude">
+                        <input type="text" class="form-control" name="longitude0" placeholder="Longitude">
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-secondary mb-3" onclick="addPoint()">Add Point</button>
+            <div class="form-group">
+                <label for="days">Number of Days:</label>
+                <select class="form-control" id="days" name="days">
+                    <option value="1">1 day</option>
+                    <option value="5">5 days</option>
+                    <option value="10">10 days</option>
+                </select>
+            </div>
+            <button type="button" class="btn btn-primary" onclick="submitForm()">Get Weather</button>
+        </form>
+    </div>
+
+    <script>
+        let pointIndex = 1;
+        function addPoint() {
+            const container = document.getElementById('pointsContainer');
+            const inputDiv = document.createElement('div');
+            inputDiv.classList.add('form-group', 'point-entry');
+            inputDiv.innerHTML = `
+                <label>Select Point Type:</label>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="pointType${pointIndex}" value="city" checked onclick="toggleInputType(${pointIndex})">
+                    <label class="form-check-label">City</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="pointType${pointIndex}" value="coordinates" onclick="toggleInputType(${pointIndex})">
+                    <label class="form-check-label">Coordinates</label>
+                </div>
+                <input type="text" class="form-control city-input" name="city${pointIndex}" placeholder="Enter city name">
+                <div class="coordinates-input" style="display: none;">
+                    <input type="text" class="form-control mb-2" name="latitude${pointIndex}" placeholder="Latitude">
+                    <input type="text" class="form-control" name="longitude${pointIndex}" placeholder="Longitude">
+                </div>
+            `;
+            container.appendChild(inputDiv);
+            pointIndex++;
+        }
+        function toggleInputType(index) {
+            const cityInput = document.getElementsByName(`city${index}`)[0];
+            const coordinatesInput = cityInput.nextElementSibling;
+            if (document.querySelector(`input[name="pointType${index}"]:checked`).value === "city") {
+                cityInput.style.display = 'block';
+                coordinatesInput.style.display = 'none';
+            } else {
+                cityInput.style.display = 'none';
+                coordinatesInput.style.display = 'block';
+            }
+        }
+        function submitForm() {
+            const points = [];
+            for (let i = 0; i < pointIndex; i++) {
+                const pointTypeElement = document.querySelector(`input[name="pointType${i}"]:checked`);
+                if (!pointTypeElement) continue;
+                const pointType = pointTypeElement.value;
+                if (pointType === "city") {
+                    const city = document.getElementsByName(`city${i}`)[0]?.value.trim();
+                    if (city) points.push(city);
+                } else {
+                    const latitude = document.getElementsByName(`latitude${i}`)[0]?.value.trim();
+                    const longitude = document.getElementsByName(`longitude${i}`)[0]?.value.trim();
+                    if (latitude && longitude) points.push(`${latitude},${longitude}`);
+                }
+            }
+            const days = document.getElementById('days').value;
+            const queryParams = new URLSearchParams();
+            points.forEach(point => queryParams.append('data', point));
+            queryParams.append('days', days);
+            window.location.href = `/dash?${queryParams.toString()}`;
+        }
+    </script>
+</body>
+</html>
